@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
+const { updateUserCoordinates } = require('../services/zipcodeService');
 
 // Validation middleware
 const validateSignup = [
@@ -85,6 +86,16 @@ router.post('/signup', validateSignup, async (req, res) => {
     // Create service provider profile if applicable
     if (role !== 'user') {
       await createServiceProviderProfile(newUser.rows[0].id, role);
+    }
+
+    // Update coordinates if zipcode is provided
+    if (zipCode) {
+      try {
+        await updateUserCoordinates(newUser.rows[0].id, zipCode);
+      } catch (error) {
+        console.error('Error updating coordinates during signup:', error);
+        // Don't fail signup if coordinate update fails
+      }
     }
 
     // Generate JWT token
@@ -306,6 +317,177 @@ router.get('/service-categories', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching service categories'
+    });
+  }
+});
+
+// POST route for advanced search with location and availability filtering
+router.post('/search', async (req, res) => {
+  try {
+    const { 
+      serviceType, 
+      userLat, 
+      userLng, 
+      maxDistance = 10, 
+      date, 
+      time,
+      city,
+      rating,
+      price_min,
+      price_max
+    } = req.body;
+
+    if (!serviceType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Service type is required'
+      });
+    }
+
+    const serviceProviderTables = {
+      'home-cooks': 'cooks',
+      'nannies': 'nannies', 
+      'puja-services': 'pandits',
+      'housekeeping': 'maids',
+      'tutoring': 'tutors',
+      'yoga': 'yoga_instructors',
+      'event-planning': 'event_planners'
+    };
+
+    const tableName = serviceProviderTables[serviceType];
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid service provider type'
+      });
+    }
+
+    // Base query with distance calculation if coordinates provided
+    let query = `
+      SELECT 
+        u.id, 
+        u.first_name, 
+        u.last_name, 
+        u.city, 
+        u.state,
+        u.address,
+        u.zip_code,
+        sp.*
+    `;
+
+    // Add distance calculation if user coordinates provided
+    if (userLat && userLng) {
+      query += `,
+        (
+          3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(CAST(u.latitude AS FLOAT))) * 
+            cos(radians(CAST(u.longitude AS FLOAT)) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(CAST(u.latitude AS FLOAT)))
+          )
+        ) AS distance
+      `;
+    }
+
+    query += `
+      FROM users u
+      JOIN ${tableName} sp ON u.id = sp.user_id
+      WHERE u.role = $3
+    `;
+
+    const queryParams = [];
+    let paramCount = 3;
+
+    // Add coordinates if provided
+    if (userLat && userLng) {
+      queryParams.push(userLat, userLng);
+      paramCount = 1;
+    } else {
+      queryParams.push(serviceType);
+      paramCount = 1;
+    }
+
+    // Add city filter
+    if (city) {
+      paramCount++;
+      query += ` AND u.city ILIKE $${paramCount}`;
+      queryParams.push(`%${city}%`);
+    }
+
+    // Add rating filter
+    if (rating) {
+      paramCount++;
+      query += ` AND sp.rating >= $${paramCount}`;
+      queryParams.push(rating);
+    }
+
+    // Add price filters
+    if (price_min) {
+      paramCount++;
+      query += ` AND sp.hourly_rate >= $${paramCount}`;
+      queryParams.push(price_min);
+    }
+
+    if (price_max) {
+      paramCount++;
+      query += ` AND sp.hourly_rate <= $${paramCount}`;
+      queryParams.push(price_max);
+    }
+
+    // Add distance filter if coordinates provided
+    if (userLat && userLng && maxDistance) {
+      paramCount++;
+      query += ` HAVING distance <= $${paramCount}`;
+      queryParams.push(maxDistance);
+    }
+
+    // Order by distance if coordinates provided, otherwise by rating
+    if (userLat && userLng) {
+      query += ' ORDER BY distance ASC';
+    } else {
+      query += ' ORDER BY sp.rating DESC, sp.total_reviews DESC';
+    }
+
+    const providers = await pool.query(query, queryParams);
+
+    // Post-process results for availability filtering
+    let filteredProviders = providers.rows;
+
+    // Filter by availability if date and time provided
+    if (date && time) {
+      const selectedDate = new Date(date);
+      const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'short' });
+      
+      filteredProviders = filteredProviders.filter(provider => {
+        // This is a simplified availability check
+        // In a real app, you'd have a separate availability table
+        return provider.availability_days && 
+               provider.availability_days.includes(dayOfWeek);
+      });
+    }
+
+    res.json({
+      success: true,
+      providers: filteredProviders,
+      total: filteredProviders.length,
+      searchParams: {
+        serviceType,
+        maxDistance,
+        date,
+        time,
+        city,
+        rating,
+        price_min,
+        price_max
+      }
+    });
+
+  } catch (err) {
+    console.error('Search error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during search'
     });
   }
 });

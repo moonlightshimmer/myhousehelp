@@ -1,6 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+// Utility functions for location and availability filtering
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in miles
+};
+
+const isAvailableOnDate = (providerAvailability, selectedDate, selectedTime) => {
+  if (!selectedDate || !selectedTime) return true;
+  
+  const date = new Date(selectedDate);
+  const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+  
+  // Check if provider is available on the selected day
+  if (!providerAvailability.includes(dayOfWeek)) {
+    return false;
+  }
+  
+  // For time-based availability, you would need more detailed availability data
+  // This is a simplified version - in real app, you'd have specific time slots
+  return true;
+};
+
 function FindService() {
   const location = useLocation();
   const [selectedService, setSelectedService] = useState('');
@@ -9,6 +38,8 @@ function FindService() {
   const [time, setTime] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [userCoordinates, setUserCoordinates] = useState(null);
+  const [maxDistance, setMaxDistance] = useState(10); // Default 10 miles
 
   const services = [
     { id: 'home-cooks', name: 'Home Cooks/Chefs', icon: '👨‍🍳', description: 'Professional cooking services' },
@@ -19,6 +50,245 @@ function FindService() {
     { id: 'yoga', name: 'Yoga & Wellness', icon: '🧘‍♀️', description: 'Fitness and wellness' },
     { id: 'event-planning', name: 'Event Planning', icon: '🎉', description: 'Event organization' },
     { id: 'pet-care', name: 'Pet Care', icon: '🐕', description: 'Pet sitting and care' }
+  ];
+
+  // Enhanced mock data with coordinates and detailed availability
+  const mockProviders = [
+    {
+      id: 1,
+      name: 'Sarah Johnson',
+      service: 'Home Cooks/Chefs',
+      rating: 4.8,
+      reviews: 127,
+      experience: '5 years',
+      hourlyRate: 25,
+      image: '👩‍🍳',
+      description: 'Professional chef with experience in various cuisines. Specializes in healthy meals and special dietary requirements.',
+      specialties: ['Healthy Cooking', 'Vegetarian', 'Gluten-Free'],
+      available: ['Mon', 'Wed', 'Fri', 'Sat'],
+      location: {
+        address: '123 Main St, San Francisco, CA',
+        coordinates: { lat: 37.7749, lng: -122.4194 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94102'
+      },
+      availability: {
+        'Mon': ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'],
+        'Wed': ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'],
+        'Fri': ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'],
+        'Sat': ['10:00', '11:00', '12:00', '13:00', '14:00']
+      }
+    },
+    {
+      id: 2,
+      name: 'Maria Rodriguez',
+      service: 'Nannies & Childcare',
+      rating: 4.9,
+      reviews: 89,
+      experience: '8 years',
+      hourlyRate: 22,
+      image: '👩‍👶',
+      description: 'Experienced nanny with background in early childhood education. Patient and caring with children of all ages.',
+      specialties: ['Infant Care', 'Educational Activities', 'Meal Prep'],
+      available: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      location: {
+        address: '456 Oak Ave, San Francisco, CA',
+        coordinates: { lat: 37.7849, lng: -122.4094 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94103'
+      },
+      availability: {
+        'Mon': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Tue': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Wed': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Thu': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Fri': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00']
+      }
+    },
+    {
+      id: 3,
+      name: 'Priya Patel',
+      service: 'Puja Services',
+      rating: 4.7,
+      reviews: 156,
+      experience: '12 years',
+      hourlyRate: 50,
+      image: '🙏',
+      description: 'Qualified religious service provider with deep knowledge of traditional ceremonies and cultural practices.',
+      specialties: ['Traditional Ceremonies', 'Festival Services', 'Home Blessings'],
+      available: ['Sat', 'Sun', 'Holidays'],
+      location: {
+        address: '789 Pine St, San Francisco, CA',
+        coordinates: { lat: 37.7949, lng: -122.3994 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94104'
+      },
+      availability: {
+        'Sat': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+        'Sun': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00']
+      }
+    },
+    {
+      id: 4,
+      name: 'Jennifer Smith',
+      service: 'Housekeeping',
+      rating: 4.6,
+      reviews: 203,
+      experience: '6 years',
+      hourlyRate: 18,
+      image: '🧹',
+      description: 'Professional housekeeper with attention to detail. Provides thorough cleaning and organizing services.',
+      specialties: ['Deep Cleaning', 'Organizing', 'Laundry'],
+      available: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      location: {
+        address: '321 Market St, San Francisco, CA',
+        coordinates: { lat: 37.7649, lng: -122.4294 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94105'
+      },
+      availability: {
+        'Mon': ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+        'Tue': ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+        'Wed': ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+        'Thu': ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+        'Fri': ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00']
+      }
+    },
+    {
+      id: 5,
+      name: 'David Chen',
+      service: 'Tutoring',
+      rating: 4.8,
+      reviews: 94,
+      experience: '7 years',
+      hourlyRate: 30,
+      image: '👨‍🏫',
+      description: 'Certified teacher with expertise in mathematics and science. Patient and effective teaching methods.',
+      specialties: ['Math', 'Science', 'Test Prep'],
+      available: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+      location: {
+        address: '654 Mission St, San Francisco, CA',
+        coordinates: { lat: 37.7549, lng: -122.4394 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94106'
+      },
+      availability: {
+        'Mon': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Wed': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Fri': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Sat': ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00'],
+        'Sun': ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00']
+      }
+    },
+    {
+      id: 6,
+      name: 'Lisa Thompson',
+      service: 'Yoga & Wellness',
+      rating: 4.9,
+      reviews: 67,
+      experience: '10 years',
+      hourlyRate: 35,
+      image: '🧘‍♀️',
+      description: 'Certified yoga instructor specializing in stress relief and mindfulness. Personalized sessions for all levels.',
+      specialties: ['Stress Relief', 'Meditation', 'Fitness'],
+      available: ['Mon', 'Tue', 'Thu', 'Sat'],
+      location: {
+        address: '987 Castro St, San Francisco, CA',
+        coordinates: { lat: 37.7449, lng: -122.4494 },
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94107'
+      },
+      availability: {
+        'Mon': ['07:00', '08:00', '09:00', '17:00', '18:00', '19:00'],
+        'Tue': ['07:00', '08:00', '09:00', '17:00', '18:00', '19:00'],
+        'Thu': ['07:00', '08:00', '09:00', '17:00', '18:00', '19:00'],
+        'Sat': ['08:00', '09:00', '10:00', '11:00', '12:00']
+      }
+    },
+    {
+      id: 7,
+      name: 'Mike Johnson',
+      service: 'Home Cooks/Chefs',
+      rating: 4.7,
+      reviews: 45,
+      experience: '6 years',
+      hourlyRate: 28,
+      image: '👨‍🍳',
+      description: 'Specialized in Italian and Mediterranean cuisine. Perfect for dinner parties and special occasions.',
+      specialties: ['Italian', 'Mediterranean', 'Seafood'],
+      available: ['Tue', 'Thu', 'Fri', 'Sat'],
+      location: {
+        address: '123 Main St, Sunnyvale, CA',
+        coordinates: { lat: 37.3688, lng: -122.0363 },
+        city: 'Sunnyvale',
+        state: 'CA',
+        zipCode: '94087'
+      },
+      availability: {
+        'Tue': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Thu': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Fri': ['16:00', '17:00', '18:00', '19:00', '20:00'],
+        'Sat': ['12:00', '13:00', '14:00', '15:00', '16:00']
+      }
+    },
+    {
+      id: 8,
+      name: 'Emma Davis',
+      service: 'Nannies & Childcare',
+      rating: 4.8,
+      reviews: 78,
+      experience: '9 years',
+      hourlyRate: 24,
+      image: '👩‍👶',
+      description: 'Experienced nanny with background in early childhood development. Patient and creative with children.',
+      specialties: ['Early Childhood', 'Creative Activities', 'Homework Help'],
+      available: ['Mon', 'Wed', 'Fri', 'Sat'],
+      location: {
+        address: '456 Oak Ave, Mountain View, CA',
+        coordinates: { lat: 37.3861, lng: -122.0839 },
+        city: 'Mountain View',
+        state: 'CA',
+        zipCode: '94041'
+      },
+      availability: {
+        'Mon': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Wed': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Fri': ['08:00', '09:00', '10:00', '15:00', '16:00', '17:00'],
+        'Sat': ['09:00', '10:00', '11:00', '12:00', '13:00']
+      }
+    },
+    {
+      id: 9,
+      name: 'Carlos Rodriguez',
+      service: 'Housekeeping',
+      rating: 4.6,
+      reviews: 112,
+      experience: '7 years',
+      hourlyRate: 20,
+      image: '🧹',
+      description: 'Professional housekeeper with attention to detail. Provides thorough cleaning and organizing services.',
+      specialties: ['Deep Cleaning', 'Organizing', 'Eco-Friendly'],
+      available: ['Mon', 'Tue', 'Wed', 'Thu'],
+      location: {
+        address: '789 Pine St, Palo Alto, CA',
+        coordinates: { lat: 37.4419, lng: -122.1430 },
+        city: 'Palo Alto',
+        state: 'CA',
+        zipCode: '94301'
+      },
+      availability: {
+        'Mon': ['08:00', '09:00', '10:00', '11:00', '12:00'],
+        'Tue': ['08:00', '09:00', '10:00', '11:00', '12:00'],
+        'Wed': ['08:00', '09:00', '10:00', '11:00', '12:00'],
+        'Thu': ['08:00', '09:00', '10:00', '11:00', '12:00']
+      }
+    }
   ];
 
   // Handle URL parameters to auto-select service
@@ -34,94 +304,66 @@ function FindService() {
     }
   }, [location.search]);
 
-  // Mock search results - in a real app, this would come from an API
-  const mockProviders = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      service: 'Home Cooks/Chefs',
-      rating: 4.8,
-      reviews: 127,
-      experience: '5 years',
-      hourlyRate: 25,
-      image: '👩‍🍳',
-      description: 'Professional chef with experience in various cuisines. Specializes in healthy meals and special dietary requirements.',
-      specialties: ['Healthy Cooking', 'Vegetarian', 'Gluten-Free'],
-      available: ['Mon', 'Wed', 'Fri', 'Sat']
-    },
-    {
-      id: 2,
-      name: 'Maria Rodriguez',
-      service: 'Nannies & Childcare',
-      rating: 4.9,
-      reviews: 89,
-      experience: '8 years',
-      hourlyRate: 22,
-      image: '👩‍👶',
-      description: 'Experienced nanny with background in early childhood education. Patient and caring with children of all ages.',
-      specialties: ['Infant Care', 'Educational Activities', 'Meal Prep'],
-      available: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-    },
-    {
-      id: 3,
-      name: 'Priya Patel',
-      service: 'Puja Services',
-      rating: 4.7,
-      reviews: 156,
-      experience: '12 years',
-      hourlyRate: 50,
-      image: '🙏',
-      description: 'Qualified religious service provider with deep knowledge of traditional ceremonies and cultural practices.',
-      specialties: ['Traditional Ceremonies', 'Festival Services', 'Home Blessings'],
-      available: ['Sat', 'Sun', 'Holidays']
-    },
-    {
-      id: 4,
-      name: 'Jennifer Smith',
-      service: 'Housekeeping',
-      rating: 4.6,
-      reviews: 203,
-      experience: '6 years',
-      hourlyRate: 18,
-      image: '🧹',
-      description: 'Professional housekeeper with attention to detail. Provides thorough cleaning and organizing services.',
-      specialties: ['Deep Cleaning', 'Organizing', 'Laundry'],
-      available: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-    },
-    {
-      id: 5,
-      name: 'David Chen',
-      service: 'Tutoring',
-      rating: 4.8,
-      reviews: 94,
-      experience: '7 years',
-      hourlyRate: 30,
-      image: '👨‍🏫',
-      description: 'Certified teacher with expertise in mathematics and science. Patient and effective teaching methods.',
-      specialties: ['Math', 'Science', 'Test Prep'],
-      available: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun']
-    },
-    {
-      id: 6,
-      name: 'Lisa Thompson',
-      service: 'Yoga & Wellness',
-      rating: 4.9,
-      reviews: 67,
-      experience: '10 years',
-      hourlyRate: 35,
-      image: '🧘‍♀️',
-      description: 'Certified yoga instructor specializing in stress relief and mindfulness. Personalized sessions for all levels.',
-      specialties: ['Stress Relief', 'Meditation', 'Fitness'],
-      available: ['Mon', 'Tue', 'Thu', 'Sat']
+  // Get user's current location
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserCoordinates({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Error getting location:', error);
+        }
+      );
     }
-  ];
+  };
 
   const handleServiceSelect = (service) => {
     setSelectedService(service.name);
     setSearchResults([]); // Clear previous results when switching services
   };
 
-  const handleSearch = (e) => {
+  // Function to get coordinates from zip code
+  const getCoordinatesFromZipCode = async (zipCode) => {
+    // Hardcoded coordinates for common test zip codes
+    const zipCodeCoordinates = {
+      '94087': { lat: 37.3688, lng: -122.0363 }, // Sunnyvale
+      '94086': { lat: 37.3688, lng: -122.0363 }, // Sunnyvale (alternative)
+      '94041': { lat: 37.3861, lng: -122.0839 }, // Mountain View
+      '94301': { lat: 37.4419, lng: -122.1430 }, // Palo Alto
+      '94102': { lat: 37.7749, lng: -122.4194 }, // San Francisco Downtown
+      '94103': { lat: 37.7849, lng: -122.4094 }, // San Francisco SoMa
+      '94104': { lat: 37.7949, lng: -122.3994 }, // San Francisco Financial District
+      '94105': { lat: 37.7649, lng: -122.4294 }, // San Francisco South Beach
+      '94107': { lat: 37.7449, lng: -122.4494 }, // San Francisco Potrero Hill
+    };
+
+    // Check if we have hardcoded coordinates first
+    if (zipCodeCoordinates[zipCode]) {
+      console.log(`Using hardcoded coordinates for ${zipCode}:`, zipCodeCoordinates[zipCode]);
+      return zipCodeCoordinates[zipCode];
+    }
+
+    try {
+      // Fallback to API service for other zip codes
+      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          lat: parseFloat(data.places[0].latitude),
+          lng: parseFloat(data.places[0].longitude)
+        };
+      }
+    } catch (error) {
+      console.log('Error getting coordinates from zip code:', error);
+    }
+    return null;
+  };
+
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!selectedService || !userLocation) {
       alert('Please select a service and enter your location');
@@ -130,14 +372,61 @@ function FindService() {
 
     setIsSearching(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      const filteredResults = mockProviders.filter(provider => 
+    try {
+      // Step 1: Get coordinates for the user location
+      let searchCoordinates = userCoordinates;
+      
+      // If no GPS coordinates but user entered a zip code, try to get coordinates
+      if (!searchCoordinates && /^\d{5}$/.test(userLocation)) {
+        searchCoordinates = await getCoordinatesFromZipCode(userLocation);
+        if (searchCoordinates) {
+          console.log(`Converted zip code ${userLocation} to coordinates:`, searchCoordinates);
+        }
+      }
+      
+      // Step 2: Filter by service type
+      let filteredResults = mockProviders.filter(provider => 
         provider.service === selectedService
       );
+
+      // Step 3: Calculate distances and sort by distance (closest first)
+      if (searchCoordinates) {
+        filteredResults = filteredResults.map(provider => ({
+          ...provider,
+          distance: calculateDistance(
+            searchCoordinates.lat,
+            searchCoordinates.lng,
+            provider.location.coordinates.lat,
+            provider.location.coordinates.lng
+          )
+        }));
+
+        // Sort by distance (closest first) - show ALL providers
+        filteredResults.sort((a, b) => a.distance - b.distance);
+      }
+
       setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 1000);
+    }
+  };
+
+  // Helper function to get service icon
+  const getServiceIcon = (serviceName) => {
+    const iconMap = {
+      'Home Cooks/Chefs': '👩‍🍳',
+      'Nannies & Childcare': '👩‍👶',
+      'Puja Services': '🙏',
+      'Housekeeping': '🧹',
+      'Tutoring': '👨‍🏫',
+      'Yoga & Wellness': '🧘‍♀️',
+      'Event Planning': '🎉',
+      'Pet Care': '🐕'
+    };
+    return iconMap[serviceName] || '👤';
   };
 
   const handleBookNow = (providerId) => {
@@ -278,21 +567,48 @@ function FindService() {
                 }}>
                   Location
                 </label>
-                <input
-                  type="text"
-                  value={userLocation}
-                  onChange={(e) => setUserLocation(e.target.value)}
-                  placeholder="Enter your city or zip code"
-                  style={{
-                    width: '100%',
-                    padding: '0.8rem',
-                    borderRadius: '8px',
-                    border: '1px solid #ddd',
-                    fontSize: '1rem'
-                  }}
-                  required
-                />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    value={userLocation}
+                    onChange={(e) => setUserLocation(e.target.value)}
+                    placeholder="Enter your city or zip code"
+                    style={{
+                      flex: 1,
+                      padding: '0.8rem',
+                      borderRadius: '8px',
+                      border: '1px solid #ddd',
+                      fontSize: '1rem'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={getUserLocation}
+                    style={{
+                      padding: '0.8rem 1rem',
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#2980b9'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#3498db'}
+                  >
+                    📍 Use My Location
+                  </button>
+                </div>
+                {userCoordinates && (
+                  <small style={{ color: '#27ae60', marginTop: '0.5rem', display: 'block' }}>
+                    ✅ Location detected: {userCoordinates.lat.toFixed(4)}, {userCoordinates.lng.toFixed(4)}
+                  </small>
+                )}
               </div>
+
+
 
               <div>
                 <label style={{
@@ -411,7 +727,8 @@ function FindService() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '1rem',
-                        marginBottom: '0.5rem'
+                        marginBottom: '0.5rem',
+                        flexWrap: 'wrap'
                       }}>
                         <span style={{
                           backgroundColor: '#FFD700',
@@ -429,6 +746,18 @@ function FindService() {
                         }}>
                           {provider.experience} experience
                         </span>
+                        {provider.distance && (
+                          <span style={{
+                            backgroundColor: '#e3f2fd',
+                            color: '#1976d2',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '12px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold'
+                          }}>
+                            📍 {provider.distance.toFixed(1)} miles away
+                          </span>
+                        )}
                       </div>
                       <div style={{
                         color: '#2c3e50',
@@ -476,6 +805,37 @@ function FindService() {
                   </div>
 
                   <div style={{ marginBottom: '1.5rem' }}>
+                    <h5 style={{
+                      color: '#2c3e50',
+                      fontSize: '1rem',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Distance & Location:
+                    </h5>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{
+                        backgroundColor: '#e3f2fd',
+                        color: '#1976d2',
+                        padding: '0.3rem 0.8rem',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold'
+                      }}>
+                        📍 {provider.distance ? `${provider.distance.toFixed(1)} miles away` : 'Distance not available'}
+                      </span>
+                      <span style={{
+                        color: '#666',
+                        fontSize: '0.8rem'
+                      }}>
+                        {provider.location?.city}, {provider.location?.state}
+                      </span>
+                    </div>
+                    
                     <h5 style={{
                       color: '#2c3e50',
                       fontSize: '1rem',
@@ -1031,3 +1391,4 @@ function FindService() {
 }
 
 export default FindService;
+
