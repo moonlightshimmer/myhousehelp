@@ -9,7 +9,7 @@ const pool = require('../db');
 const validateSignup = [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('role').isIn(['user', 'cook']).withMessage('Role must be either "user" or "cook"'),
+  body('role').isIn(['user', 'cook', 'nanny', 'pandit', 'maid', 'tutor', 'yoga_instructor', 'event_planner']).withMessage('Please select a valid role'),
   body('firstName').optional().trim().isLength({ min: 1 }).withMessage('First name is required'),
   body('lastName').optional().trim().isLength({ min: 1 }).withMessage('Last name is required')
 ];
@@ -18,6 +18,27 @@ const validateLogin = [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required')
 ];
+
+// Helper function to create service provider profile
+const createServiceProviderProfile = async (userId, role) => {
+  const serviceProviderTables = {
+    'cook': 'cooks',
+    'nanny': 'nannies',
+    'pandit': 'pandits',
+    'maid': 'maids',
+    'tutor': 'tutors',
+    'yoga_instructor': 'yoga_instructors',
+    'event_planner': 'event_planners'
+  };
+
+  const tableName = serviceProviderTables[role];
+  if (tableName) {
+    await pool.query(
+      `INSERT INTO ${tableName} (user_id) VALUES ($1)`,
+      [userId]
+    );
+  }
+};
 
 // POST route for user sign-up
 router.post('/signup', validateSignup, async (req, res) => {
@@ -61,12 +82,9 @@ router.post('/signup', validateSignup, async (req, res) => {
       email, passwordHash, role, firstName, lastName, phone, address, city, state, zipCode
     ]);
 
-    // If user is a cook, create cook profile
-    if (role === 'cook') {
-      await pool.query(
-        'INSERT INTO cooks (user_id) VALUES ($1)',
-        [newUser.rows[0].id]
-      );
+    // Create service provider profile if applicable
+    if (role !== 'user') {
+      await createServiceProviderProfile(newUser.rows[0].id, role);
     }
 
     // Generate JWT token
@@ -189,6 +207,105 @@ router.get('/profile', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching profile'
+    });
+  }
+});
+
+// GET route to get service providers by type
+router.get('/service-providers/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { city, rating, price_min, price_max } = req.query;
+
+    const serviceProviderTables = {
+      'cook': 'cooks',
+      'nanny': 'nannies',
+      'pandit': 'pandits',
+      'maid': 'maids',
+      'tutor': 'tutors',
+      'yoga_instructor': 'yoga_instructors',
+      'event_planner': 'event_planners'
+    };
+
+    const tableName = serviceProviderTables[type];
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid service provider type'
+      });
+    }
+
+    let query = `
+      SELECT 
+        u.id, u.first_name, u.last_name, u.city, u.state,
+        sp.*
+      FROM users u
+      JOIN ${tableName} sp ON u.id = sp.user_id
+      WHERE u.role = $1
+    `;
+    
+    const queryParams = [type];
+    let paramCount = 1;
+
+    if (city) {
+      paramCount++;
+      query += ` AND u.city ILIKE $${paramCount}`;
+      queryParams.push(`%${city}%`);
+    }
+
+    if (rating) {
+      paramCount++;
+      query += ` AND sp.rating >= $${paramCount}`;
+      queryParams.push(rating);
+    }
+
+    if (price_min) {
+      paramCount++;
+      query += ` AND sp.hourly_rate >= $${paramCount}`;
+      queryParams.push(price_min);
+    }
+
+    if (price_max) {
+      paramCount++;
+      query += ` AND sp.hourly_rate <= $${paramCount}`;
+      queryParams.push(price_max);
+    }
+
+    query += ' ORDER BY sp.rating DESC, sp.total_reviews DESC';
+
+    const providers = await pool.query(query, queryParams);
+
+    res.json({
+      success: true,
+      providers: providers.rows
+    });
+
+  } catch (err) {
+    console.error('Service providers error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching service providers'
+    });
+  }
+});
+
+// GET route to get service categories
+router.get('/service-categories', async (req, res) => {
+  try {
+    const categories = await pool.query(
+      'SELECT * FROM service_categories WHERE is_active = true ORDER BY name'
+    );
+
+    res.json({
+      success: true,
+      categories: categories.rows
+    });
+
+  } catch (err) {
+    console.error('Service categories error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching service categories'
     });
   }
 });

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function Signup() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user',
+    role: 'cook',
     firstName: '',
     lastName: '',
     phone: '',
@@ -105,7 +106,7 @@ function Signup() {
           email: '',
           password: '',
           confirmPassword: '',
-          role: 'user',
+          role: 'cook',
           firstName: '',
           lastName: '',
           phone: '',
@@ -130,7 +131,7 @@ function Signup() {
       <div style={{ flex: 1, backgroundImage: 'url("/images/Indian_dishes.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
       <div style={{ flex: 1, backgroundColor: '#FFD700', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', padding: '20px' }}>
         <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <h1 style={{ color: 'black', fontSize: '28px', alignSelf: 'center', marginBottom: '20px' }}>Welcome to FindMyCook!</h1>
+          <h1 style={{ color: 'black', fontSize: '28px', alignSelf: 'center', marginBottom: '20px' }}>Welcome to MyHouseHelp!</h1>
           
           {message && (
             <div style={{ 
@@ -236,39 +237,134 @@ function Signup() {
             }}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'space-around', margin: '20px 0' }}>
-            <button 
-              type="button" 
-              onClick={() => setFormData(prev => ({ ...prev, role: 'user' }))} 
-              style={{ 
-                flex: 1, 
-                padding: '12px', 
-                margin: '0 5px',
-                border: formData.role === 'user' ? '2px solid #007bff' : '1px solid #ddd',
-                borderRadius: '5px',
-                backgroundColor: formData.role === 'user' ? '#007bff' : '#fff',
-                color: formData.role === 'user' ? '#fff' : '#000',
-                cursor: 'pointer'
-              }}
-            >
-              I want a cook
-            </button>
-            <button 
-              type="button" 
-              onClick={() => setFormData(prev => ({ ...prev, role: 'cook' }))} 
-              style={{ 
-                flex: 1, 
-                padding: '12px', 
-                margin: '0 5px',
-                border: formData.role === 'cook' ? '2px solid #007bff' : '1px solid #ddd',
-                borderRadius: '5px',
-                backgroundColor: formData.role === 'cook' ? '#007bff' : '#fff',
-                color: formData.role === 'cook' ? '#fff' : '#000',
-                cursor: 'pointer'
-              }}
-            >
-              I am cooking meals
-            </button>
+          <div style={{ margin: '20px 0' }}>
+            <h3 style={{ marginBottom: '15px', color: '#333', textAlign: 'center' }}>I am a Service Provider:</h3>
+            
+            {/* Service Provider Roles */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'cook' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'cook' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'cook' ? '#007bff' : '#fff',
+                    color: formData.role === 'cook' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  👨‍🍳 Home Cook/Chef
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'nanny' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'nanny' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'nanny' ? '#007bff' : '#fff',
+                    color: formData.role === 'nanny' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  👶 Nanny & Childcare
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'pandit' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'pandit' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'pandit' ? '#007bff' : '#fff',
+                    color: formData.role === 'pandit' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🕉️ Puja Services
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'maid' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'maid' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'maid' ? '#007bff' : '#fff',
+                    color: formData.role === 'maid' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🧹 Housekeeping
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'tutor' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'tutor' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'tutor' ? '#007bff' : '#fff',
+                    color: formData.role === 'tutor' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  📚 Tutoring
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'yoga_instructor' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'yoga_instructor' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'yoga_instructor' ? '#007bff' : '#fff',
+                    color: formData.role === 'yoga_instructor' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🧘‍♀️ Yoga & Wellness
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'event_planner' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'event_planner' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'event_planner' ? '#007bff' : '#fff',
+                    color: formData.role === 'event_planner' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🎉 Event Planning
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'pet_care' }))} 
+                  style={{ 
+                    padding: '10px 8px', 
+                    border: formData.role === 'pet_care' ? '2px solid #007bff' : '1px solid #ddd',
+                    borderRadius: '5px',
+                    backgroundColor: formData.role === 'pet_care' ? '#007bff' : '#fff',
+                    color: formData.role === 'pet_care' ? '#fff' : '#000',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🐕 Pet Care
+                </button>
+              </div>
+            </div>
           </div>
 
           <input
@@ -346,6 +442,21 @@ function Signup() {
           >
             {isLoading ? 'Signing up...' : 'Sign Up'}
           </button>
+
+          {/* Customer option at the bottom */}
+          <div style={{ textAlign: 'center', marginTop: '10px' }}>
+            <Link 
+              to="/find-service" 
+              style={{ 
+                color: '#666', 
+                fontSize: '14px', 
+                textDecoration: 'none',
+                fontStyle: 'italic'
+              }}
+            >
+              Shoot, I am a customer looking for service providers
+            </Link>
+          </div>
         </form>
       </div>
     </div>
