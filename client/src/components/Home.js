@@ -16,7 +16,7 @@ function Home() {
           marginBottom: '1rem',
           fontWeight: 'bold'
         }}>
-          Find Your Trusted Home Help 🏠
+          Find Your Trusted Help for Home 🏠 Quick and easy
         </h1>
         <p style={{
           fontSize: '1.3rem',
@@ -360,84 +360,20 @@ function Home() {
         }}>
           Simple Steps to Get Started
         </h2>
+        {/* Workflow image or content will be added here later */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '2rem',
-          maxWidth: '1000px',
-          margin: '0 auto'
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '200px',
+          color: '#aaa',
+          fontStyle: 'italic',
+          fontSize: '1.2rem',
+          border: '2px dashed #eee',
+          borderRadius: '15px',
+          background: '#fafafa'
         }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              backgroundColor: '#FFD700',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              margin: '0 auto 1rem',
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}>
-              1
-            </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: '#2c3e50' }}>
-              Search & Choose
-            </h3>
-            <p style={{ color: '#666', lineHeight: '1.6' }}>
-              Browse available service providers in your area, read reviews, and select your preferred professional.
-            </p>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              backgroundColor: '#FFD700',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              margin: '0 auto 1rem',
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}>
-              2
-            </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: '#2c3e50' }}>
-              Book & Connect
-            </h3>
-            <p style={{ color: '#666', lineHeight: '1.6' }}>
-              Schedule your service and discuss requirements directly with your chosen provider.
-            </p>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              backgroundColor: '#FFD700',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              margin: '0 auto 1rem',
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}>
-              3
-            </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: '#2c3e50' }}>
-              Enjoy & Rate
-            </h3>
-            <p style={{ color: '#666', lineHeight: '1.6' }}>
-              Enjoy your service and leave a review to help other community members.
-            </p>
-          </div>
+          (Workflow coming soon)
         </div>
       </div>
 
