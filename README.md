@@ -1,4 +1,4 @@
-# MyHouseHelp 🏠
+# Helperly 🏠
 
 A platform connecting Indian families with trusted service providers for home services, childcare, religious services, and more. MyHouseHelp makes it easy to find qualified professionals who understand your culture and values, with advanced location-based filtering and smart matching.
 
